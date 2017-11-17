@@ -4,4 +4,4 @@ y=chirp(t,fo,1.2,f1);
 subplot(2,2,1); plot(t, y)
 subplot(2,2,2); spectrogram(y);% uses DSP Toolbox
 subplot(2,2,3); spectrogram(y,256,200,256,1000);
-subplot(2,2,4); spectrogram(y,256,100,128,500);
+subplot(2,2,4); spectrogram(y,256,100,128,1000);
