@@ -2,6 +2,7 @@
 % as required
 function [x_freq, y_freq] = Visualise(y, Fs)
 % Play the sound
+fprintf('Playing original sound file\n');
 sound(y, Fs);
 
 % Plot in time domain, with x axis in seconds rather than samples

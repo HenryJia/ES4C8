@@ -50,7 +50,7 @@ while true
 
    % Find the formants with LPC
    figure(5)
-   r = 50;
+   r = 50; % Use 50 because our computers can handle it
    [lpccoef, err] = lpc(y, r);
    [H, freq] = freqz(1, lpccoef, 512, Fs);
    plot(freq, abs(H))
@@ -71,7 +71,7 @@ while true
    end
 
    % Now for speech generation
-   % Doing the entire word by LPC will not be possible
+   % Doing the entire word or phrase by LPC will not be possible
    % We divide it up into segments each with seg_length length
    y_fake = [];
    seg_length = 1000;
@@ -79,19 +79,18 @@ while true
        if seg_length > length(y) - i
            break
        end
+
+       % Do a long and short term LPC for Glottal (pitch) model and
+       % vocal tract model
        y_short = y(i:i + seg_length);
        y_long = [y_short; y_short; y_short; y_short];
 
        [lpccoef1, err] = lpc(y_long, 4 * r);
        [lpccoef2, err] = lpc(y_short, r);
 
-       %t = (0:1/Fs:(seg_length - 1) / Fs)';
-       %inp = sin(2 * pi * fundamental * t);
-       %inp = cos(2 * pi * fundamental * t);
-
        inp = inp + randn(seg_length, 1);
        % We multiply and weight by the maximum displacement of the real
-       % signal do mimic the silent and non-silent regions
+       % signal to mimic the silent and non-silent regions
        out = filter(1, lpccoef1, inp);
        out = filter(1, lpccoef2, out) * max(abs(y_short));
        y_fake = [y_fake; out];
@@ -100,11 +99,15 @@ while true
    y_fake = y_fake / max(abs(y_fake)) * max(abs(y));
 
    % Pause for a bit then plot and play
-   pause(5)
    figure(6);
-   sound(y_fake, Fs)
    plot((1:length(y_fake)) / Fs, y_fake)
    title('Generated Speech Time Domain')
    xlabel('Time (seconds)')
    ylabel('Magnitude')
+
+   pause(5)
+   fprintf('Playing generated sound\n');
+   sound(y_fake, Fs)
+   fprintf('Saving original sound\n');
+   audiowrite(strcat(phrase, '_fake.wav'), y_fake, Fs);
 end
