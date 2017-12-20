@@ -132,6 +132,6 @@ while true
    pause(5)
    fprintf('Playing generated sound\n');
    sound(y_fake, Fs)
-   fprintf('Saving original sound\n');
+   fprintf('Saving generated sound\n');
    audiowrite(strcat(phrase, '_fake.wav'), y_fake, Fs);
 end
