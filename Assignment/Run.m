@@ -1,3 +1,5 @@
+clear
+clc
 while true
    phrase = input('Enter phrase\n','s');
 
@@ -33,8 +35,12 @@ while true
        peak_distance = 512;
    end
 
-   y = y .* hamming(length(y));
+   % Apply a butterworth filter between 40Hz and 1KHz
+   [b_bpf, a_bpf] = butter(2, [40/(Fs/2), 1000/(Fs/2)]);
+   y = filter(b_bpf, a_bpf, y);
 
+   % Normalise to +-1
+   y = y / max(abs(y));
 
    % Use our Visualise function to output the sound, do the plots
    % As well as get the frequency
@@ -45,12 +51,12 @@ while true
 
    % Find the fundamental frequency
    [pks, locs] = findpeaks(y_freq, 'MinPeakDistance', peak_distance);
-   fundamental = x_freq(locs(2));
+   fundamental = x_freq(locs(1));
    fprintf("Fundamental frequency %f Hz\n", fundamental);
 
    % Find the formants with LPC
    figure(5)
-   r = 50; % Use 50 because our computers can handle it
+   r = 100; % Use 20 because our computers can handle it
    [lpccoef, err] = lpc(y, r);
    [H, freq] = freqz(1, lpccoef, 512, Fs);
    plot(freq, abs(H))
@@ -73,38 +79,56 @@ while true
    % Now for speech generation
    % Doing the entire word or phrase by LPC will not be possible
    % We divide it up into segments each with seg_length length
-   y_fake = [];
-   seg_length = 1000;
-   for i = 1:seg_length:length(y)
-       if seg_length > length(y) - i
-           break
+   % We first do the long term Glottal (pitch) model
+   % We need each segment to be long enough to contain the lowest
+   % Frequency which is 40Hz
+   % Fs = 44100, therefore 44100/40 = 1102.5 < 2000
+   seg_len = 2000;
+   shift_len = 50;
+   y_fake = zeros(length(y) + seg_len, 1);
+   i = 1;
+   fprintf("Performing Synthesis using LPC\n");
+   while seg_len < length(y) - i
+       y_seg = y(i:i + seg_len - 1);
+
+       % Determine if signal is voiced or unvoiced
+       % Signal is voiced if the energy at any frequency is higher
+       % Than the 10% of the average
+       % Source: https://github.com/krylenko/LPCsynthesis/
+       acf = autocorr(y_seg, length(y_seg) - 1);
+       [energy, fundamental] = max(acf(50:end));
+       fundamental = fundamental + 50;
+
+       if energy > 0.1 * acf(1)
+          inp = zeros(seg_len, 1);
+          inp(1:fundamental:end) = 1;
+       else
+          inp = randn(seg_len, 1);
        end
 
-       % Do a long and short term LPC for Glottal (pitch) model and
-       % vocal tract model
-       y_short = y(i:i + seg_length);
-       y_long = [y_short; y_short; y_short; y_short];
+       % Do the LPC and filtering
+       [lpccoef, err] = lpc(y_seg, r);
+       out = filter(err, lpccoef, inp) .* hamming(seg_len);
 
-       [lpccoef1, err] = lpc(y_long, 4 * r);
-       [lpccoef2, err] = lpc(y_short, r);
+       % Soft cutoff at +- 1 for magnitude
+       y_fake(i:i+seg_len-1) = tanh(out + y_fake(i:i+seg_len-1));
 
-       inp = inp + randn(seg_length, 1);
-       % We multiply and weight by the maximum displacement of the real
-       % signal to mimic the silent and non-silent regions
-       out = filter(1, lpccoef1, inp);
-       out = filter(1, lpccoef2, out) * max(abs(y_short));
-       y_fake = [y_fake; out];
+       i = i + shift_len;
    end
-   % Scale our generated speech's magnitude to match our real speech
-   y_fake = y_fake / max(abs(y_fake)) * max(abs(y));
 
-   % Pause for a bit then plot and play
+   % Normalise +- 1
+   y_fake = y_fake / max(abs(y_fake));
+
+   fprintf("Done, wait 5 seconds before playing\n");
+
+   % Plot
    figure(6);
    plot((1:length(y_fake)) / Fs, y_fake)
    title('Generated Speech Time Domain')
    xlabel('Time (seconds)')
    ylabel('Magnitude')
 
+   % Pause for a bit then play
    pause(5)
    fprintf('Playing generated sound\n');
    sound(y_fake, Fs)
