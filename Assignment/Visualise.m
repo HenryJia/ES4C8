@@ -21,22 +21,13 @@ y_freq = fft(y);
 x_freq = (0:1 / length(y_freq):1 - 1 / length(y_freq)) * Fs;
 
 % Plot the amplitude
-plot(x_freq, abs(y_freq))
-title('Frequency Domain Amplitude (0 to 20KHz)')
-xlabel('Frequency (Hz)')
-ylabel('Power')
-
-% Plot up to 20000Hz since that's the human hearing range
-axis([0 20000 0 500])
-
-figure(3)
-plot(x_freq, abs(y_freq))
+plot(x_freq(1:5:end), abs(y_freq(1:5:end)))
 title('Frequency Domain Amplitude (0 to 1KHz)')
 xlabel('Frequency (Hz)')
 ylabel('Power')
 axis([0 1000 0 500])
 
-figure(4)
+figure(3)
 spectrogram(y, 1024, 512, 1024, Fs);
 title('Time Frequency Domain')
 

@@ -35,10 +35,6 @@ while true
        peak_distance = 512;
    end
 
-   % Apply a butterworth filter between 40Hz and 1KHz
-   [b_bpf, a_bpf] = butter(2, [40/(Fs/2), 1000/(Fs/2)]);
-   y = filter(b_bpf, a_bpf, y);
-
    % Normalise to +-1
    y = y / max(abs(y));
 
@@ -55,7 +51,7 @@ while true
    fprintf("Fundamental frequency %f Hz\n", fundamental);
 
    % Find the formants with LPC
-   figure(5)
+   figure(4)
    r = 100; % Use 20 because our computers can handle it
    [lpccoef, err] = lpc(y, r);
    [H, freq] = freqz(1, lpccoef, 512, Fs);
@@ -116,17 +112,29 @@ while true
        i = i + shift_len;
    end
 
-   % Normalise +- 1
+   % Normalise to +- 1
    y_fake = y_fake / max(abs(y_fake));
 
    fprintf("Done, wait 5 seconds before playing\n");
 
    % Plot
-   figure(6);
+   figure(5);
    plot((1:length(y_fake)) / Fs, y_fake)
    title('Generated Speech Time Domain')
    xlabel('Time (seconds)')
    ylabel('Magnitude')
+
+   figure(6);
+   y_freq = fft(y_fake);
+   % Set the axis to Hz
+   x_freq = (0:1 / length(y_freq):1 - 1 / length(y_freq)) * Fs;
+
+   % Plot the amplitude
+   plot(x_freq(1:5:end), abs(y_freq(1:5:end)))
+   title('Generated Speech Frequency Domain Amplitude (0 to 1KHz)')
+   xlabel('Frequency (Hz)')
+   ylabel('Power')
+   axis([0 1000 0 500])
 
    % Pause for a bit then play
    pause(5)
