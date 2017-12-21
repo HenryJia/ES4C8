@@ -35,6 +35,10 @@ while true
        peak_distance = 512;
    end
 
+   % Apply a butterworth filter between 40Hz and 1KHz
+   %[b_bpf, a_bpf] = butter(2, [40/(Fs/2), 1000/(Fs/2)]);
+   %y = filter(b_bpf, a_bpf, y);
+
    % Normalise to +-1
    y = y / max(abs(y));
 
@@ -107,7 +111,7 @@ while true
        out = filter(err, lpccoef, inp) .* hamming(seg_len);
 
        % Soft cutoff at +- 1 for magnitude
-       y_fake(i:i+seg_len-1) = tanh(out + y_fake(i:i+seg_len-1));
+       y_fake(i:i+seg_len-1) = tanh(0.5*(out + y_fake(i:i+seg_len-1)));
 
        i = i + shift_len;
    end
