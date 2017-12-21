@@ -1,6 +1,6 @@
 % The function to visualise time domain, freq domain and time/freq
 % as required
-function [x_freq, y_freq] = Visualise(y, Fs)
+function Visualise(y, Fs)
 % Play the sound
 fprintf('Playing original sound file\n');
 sound(y, Fs);
@@ -25,7 +25,7 @@ plot(x_freq(1:5:end), abs(y_freq(1:5:end)))
 title('Frequency Domain Amplitude (0 to 1KHz)')
 xlabel('Frequency (Hz)')
 ylabel('Power')
-axis([0 1000 0 500])
+axis([0 1000 0 1500])
 
 figure(3)
 spectrogram(y, 1024, 512, 1024, Fs);
